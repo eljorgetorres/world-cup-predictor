@@ -1,4 +1,4 @@
-// Current group standings as of June 21, 2026
+// Current group standings as of June 22, 2026 (includes ARG 2–0 AUT)
 // Each entry: { teamId, mp, w, d, l, gf, ga, pts }
 export const GROUP_STANDINGS = {
   A: [
@@ -38,16 +38,16 @@ export const GROUP_STANDINGS = {
     { teamId: 'TUN', mp: 2, w: 0, d: 0, l: 2, gf: 1, ga: 9, pts: 0 },
   ],
   G: [
+    { teamId: 'EGY', mp: 2, w: 1, d: 1, l: 0, gf: 4, ga: 2, pts: 4 },
     { teamId: 'IRN', mp: 2, w: 0, d: 2, l: 0, gf: 2, ga: 2, pts: 2 },
     { teamId: 'BEL', mp: 2, w: 0, d: 2, l: 0, gf: 1, ga: 1, pts: 2 },
-    { teamId: 'NZL', mp: 1, w: 0, d: 1, l: 0, gf: 2, ga: 2, pts: 1 },
-    { teamId: 'EGY', mp: 1, w: 0, d: 1, l: 0, gf: 1, ga: 1, pts: 1 },
+    { teamId: 'NZL', mp: 2, w: 0, d: 1, l: 1, gf: 3, ga: 5, pts: 1 },
   ],
   H: [
     { teamId: 'ESP', mp: 2, w: 1, d: 1, l: 0, gf: 4, ga: 0, pts: 4 },
-    { teamId: 'URU', mp: 1, w: 0, d: 1, l: 0, gf: 1, ga: 1, pts: 1 },
+    { teamId: 'URU', mp: 2, w: 0, d: 2, l: 0, gf: 3, ga: 3, pts: 2 },
+    { teamId: 'CPV', mp: 2, w: 0, d: 2, l: 0, gf: 2, ga: 2, pts: 2 },
     { teamId: 'KSA', mp: 2, w: 0, d: 1, l: 1, gf: 1, ga: 5, pts: 1 },
-    { teamId: 'CPV', mp: 1, w: 0, d: 1, l: 0, gf: 0, ga: 0, pts: 1 },
   ],
   I: [
     { teamId: 'NOR', mp: 1, w: 1, d: 0, l: 0, gf: 4, ga: 1, pts: 3 },
@@ -56,8 +56,8 @@ export const GROUP_STANDINGS = {
     { teamId: 'IRQ', mp: 1, w: 0, d: 0, l: 1, gf: 1, ga: 4, pts: 0 },
   ],
   J: [
-    { teamId: 'ARG', mp: 1, w: 1, d: 0, l: 0, gf: 3, ga: 0, pts: 3 },
-    { teamId: 'AUT', mp: 1, w: 1, d: 0, l: 0, gf: 3, ga: 1, pts: 3 },
+    { teamId: 'ARG', mp: 2, w: 2, d: 0, l: 0, gf: 5, ga: 0, pts: 6 },
+    { teamId: 'AUT', mp: 2, w: 1, d: 0, l: 1, gf: 3, ga: 3, pts: 3 },
     { teamId: 'JOR', mp: 1, w: 0, d: 0, l: 1, gf: 1, ga: 3, pts: 0 },
     { teamId: 'ALG', mp: 1, w: 0, d: 0, l: 1, gf: 0, ga: 3, pts: 0 },
   ],
@@ -75,7 +75,7 @@ export const GROUP_STANDINGS = {
   ],
 };
 
-// Remaining matches per group (not yet played as of June 21, 2026)
+// Remaining matches per group (not yet played as of June 22, 2026)
 export const REMAINING_MATCHES = {
   A: [
     { home: 'CZE', away: 'MEX' },
@@ -102,12 +102,10 @@ export const REMAINING_MATCHES = {
     { home: 'JPN', away: 'SWE' },
   ],
   G: [
-    { home: 'EGY', away: 'NZL' },
     { home: 'BEL', away: 'NZL' },
     { home: 'EGY', away: 'IRN' },
   ],
   H: [
-    { home: 'CPV', away: 'URU' },
     { home: 'ESP', away: 'URU' },
     { home: 'KSA', away: 'CPV' },
   ],
@@ -118,7 +116,7 @@ export const REMAINING_MATCHES = {
     { home: 'SEN', away: 'IRQ' },
   ],
   J: [
-    { home: 'ARG', away: 'AUT' },
+    // ARG vs AUT played June 22: ARG 2–0 AUT
     { home: 'ALG', away: 'JOR' },
     { home: 'ARG', away: 'JOR' },
     { home: 'ALG', away: 'AUT' },

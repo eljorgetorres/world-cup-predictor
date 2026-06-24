@@ -339,6 +339,22 @@ body {
   color: var(--muted);
 }
 
+.coming-soon-view {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.coming-soon-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .spinner {
   width: 44px;
   height: 44px;

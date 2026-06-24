@@ -383,12 +383,17 @@ export default function App() {
               <button className={`stage-tab${view === 'games'   ? ' active' : ''}`} onClick={() => setView('games')}>GAMES</button>
               <button className={`stage-tab${view === 'bracket' ? ' active' : ''}`} onClick={() => setView('bracket')}>BRACKET</button>
               <button className={`stage-tab${view === 'groups'  ? ' active' : ''}`} onClick={() => setView('groups')}>GROUPS</button>
+              <button className={`stage-tab${view === 'upsets'  ? ' active' : ''}`} onClick={() => setView('upsets')}>UPSETS</button>
             </nav>
 
             {view === 'games' ? (
               <GamesView simMethod={simMethod} predictionMode={predictionMode} playerPhotos={playerPhotos} />
             ) : view === 'groups' ? (
               <GroupsView probs={simResults} simMethod={simMethod} predictionMode={predictionMode} playerPhotos={playerPhotos} />
+            ) : view === 'upsets' ? (
+              <div className="coming-soon-view">
+                <div className="coming-soon-label">COMING SOON</div>
+              </div>
             ) : (
               <BracketView
                 probs={simResults}

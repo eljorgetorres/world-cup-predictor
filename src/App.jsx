@@ -94,7 +94,9 @@ function matchdayLabel(dateStr) {
   const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'numeric', day: 'numeric' }).formatToParts(d);
   const month = parseInt(parts.find(p => p.type === 'month')?.value ?? '6');
   const day   = parseInt(parts.find(p => p.type === 'day')?.value ?? '1');
-  return month === 6 && day <= 23 ? 'MD2' : 'MD3';
+  if (month === 6 && day <= 17) return 'MD1';
+  if (month === 6 && day <= 23) return 'MD2';
+  return 'MD3';
 }
 
 // ─── Next Match widget ──────────────────────────────────────────────────────
@@ -210,16 +212,21 @@ export function GameCardGrid({ homeId, awayId, simMethod, predictionMode, onHome
   );
 }
 
-function GameCard({ match, simMethod, predictionMode, playerPhotos }) {
+function GameCard({ match, simMethod, predictionMode, playerPhotos, now }) {
   const [teamView, setTeamView] = useState(null);
+  const kickoff = new Date(match.date).getTime();
+  const isLive = kickoff <= now && now < kickoff + 2 * 60 * 60 * 1000;
 
   return (
     <>
-      <div className="game-card">
+      <div className={`game-card${isLive ? ' game-card-live' : ''}`}>
         <div className="game-card-meta">
           <span className="game-meta-group">Group {match.group}</span>
           <span className="game-meta-sep">·</span>
-          <span className="game-meta-time">{formatMatchTime(match.date)}</span>
+          {isLive
+            ? <span className="game-meta-live">LIVE</span>
+            : <span className="game-meta-time">{formatMatchTime(match.date)}</span>
+          }
           <span className="game-meta-sep">·</span>
           <span className="game-meta-venue">{match.venue}</span>
         </div>
@@ -243,8 +250,18 @@ function GameCard({ match, simMethod, predictionMode, playerPhotos }) {
 // ─── Games View ─────────────────────────────────────────────────────────────
 
 function GamesView({ simMethod, predictionMode, playerPhotos }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  const active = UPCOMING_MATCHES.filter(
+    m => new Date(m.date).getTime() + 2 * 60 * 60 * 1000 > now
+  );
+
   const byDate = {};
-  for (const match of UPCOMING_MATCHES) {
+  for (const match of active) {
     const etKey = getETDateKey(match.date);
     if (!byDate[etKey]) byDate[etKey] = [];
     byDate[etKey].push(match);
@@ -268,6 +285,7 @@ function GamesView({ simMethod, predictionMode, playerPhotos }) {
                 simMethod={simMethod}
                 predictionMode={predictionMode}
                 playerPhotos={playerPhotos}
+                now={now}
               />
             ))}
           </div>
@@ -314,12 +332,14 @@ export default function App() {
       {/* Full-width sticky dark header */}
       <header className="app-header">
         <div className="wc-topbar">
-          <div className="wc-header-title">
-            <div className="wc-header-pre">WORLD CUP 2026</div>
-            <h1 className="wc-header-main">PREDICTOR</h1>
+          <div className="wc-topbar-left">
+            <div className="wc-header-title">
+              <div className="wc-header-pre">WORLD CUP 2026</div>
+              <h1 className="wc-header-main">PREDICTOR</h1>
+            </div>
+            <NextMatch />
           </div>
           <div className="wc-topbar-right">
-            <NextMatch />
             <div className="header-method-picker">
               <span className="header-method-label">MODEL</span>
               {SIM_METHODS.map(({ key, label, desc }) => (
@@ -357,6 +377,7 @@ export default function App() {
               >
                 <span className="nav-predict-dot" />
                 PREDICT
+                <span className="nav-predict-badge">{predictionMode ? 'ON' : 'OFF'}</span>
               </button>
               <div className="stage-nav-sep" />
               <button className={`stage-tab${view === 'games'   ? ' active' : ''}`} onClick={() => setView('games')}>GAMES</button>

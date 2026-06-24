@@ -13,6 +13,29 @@ import { SQUAD_AVG_AGE } from '../data/squadAge.js';
 
 const ALL_MATCHES = [...PLAYED_MATCHES, ...UPCOMING_MATCHES];
 
+// ── Goal-environment weights ───────────────────────────────────────────────
+// computeChaos already inspects weather/venue/stakes/form to judge how *upset-
+// prone* a match is. Those same signals also say something about the GOAL
+// ENVIRONMENT — i.e. whether the match is likely to be high- or low-scoring,
+// independent of who wins. We accumulate a signed `goalEnvDelta` (in goals)
+// that UpsetsView applies to the TOTAL expected goals before splitting into a
+// scoreline. Negative = conditions suppress scoring; positive = open game.
+// Values are deliberately modest (sum clamped to ±GOAL_ENV_CLAMP) and tunable.
+const GOAL_ENV = {
+  RAIN_HEAVY:    -0.7,   // wet pitch, mishit shots, cagey build-up
+  RAIN_MODERATE: -0.35,
+  HEAT_EXTREME:  -0.6,   // players conserve energy, tempo collapses late
+  HEAT_HIGH:     -0.3,
+  ALTITUDE_HIGH: -0.5,   // sea-level legs fade, game slows in the final third
+  ALTITUDE_MED:  -0.25,
+  HUMIDITY:      -0.25,  // high-press systems stall, fewer transitions
+  CAGEY_EVEN:    -0.3,   // ultra-tight ELO, nothing to separate = low-event
+  DESPERATION:   +0.8,   // both winless / must-win => stretched, end-to-end
+  STAKES_OPEN:   +0.4,   // tight on points, both chasing a result
+  ATTACK_FORM:   +0.4,   // an in-form attacking side lifts the tempo
+};
+const GOAL_ENV_CLAMP = 1.6; // max total-goals swing in either direction
+
 function haversineKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -92,12 +115,14 @@ export function computeChaos(match) {
 
   let chaosScore   = 0;
   let deltaForDog  = 0;   // positive = helps underdog win probability
+  let goalEnvDelta = 0;   // positive = conditions inflate total goals
   const drivers    = [];
 
   // ── 1. Match closeness (intrinsic variance) ──
   if (eloDiff < 80) {
     chaosScore += 20;
     deltaForDog += 4;
+    goalEnvDelta += GOAL_ENV.CAGEY_EVEN; // evenly-matched sides tend to cancel out
     drivers.push({ icon: '⚖️', text: `ELO gap just ${eloDiff}pts — genuinely even match, coin-flip territory`, delta: 4 });
   } else if (eloDiff < 160) {
     chaosScore += 12;
@@ -125,10 +150,12 @@ export function computeChaos(match) {
   if (favMp >= 1 && dogMp >= 1 && favPts === 0 && dogPts === 0) {
     chaosScore += 16;
     deltaForDog += 5;
+    goalEnvDelta += GOAL_ENV.DESPERATION; // both must chase => stretched, open
     drivers.push({ icon: '🎯', text: `Both teams winless — elimination-style desperation from the underdog`, delta: 5 });
   } else if (favMp >= 1 && Math.abs(favPts - dogPts) <= 1) {
     chaosScore += 14;
     deltaForDog += 4;
+    goalEnvDelta += GOAL_ENV.STAKES_OPEN; // both chasing a result
     drivers.push({ icon: '🎯', text: `Tight on points (${favPts} vs ${dogPts}) — must-win pressure compresses gap`, delta: 4 });
   }
 
@@ -137,10 +164,12 @@ export function computeChaos(match) {
     if (venue.tempC >= 36) {
       chaosScore += 16;
       deltaForDog += 5;
+      goalEnvDelta += GOAL_ENV.HEAT_EXTREME; // energy conservation kills tempo
       drivers.push({ icon: '🌡️', text: `${venue.tempC}°C at ${venue.city} — extreme heat neutralises superior technique`, delta: 5 });
     } else if (venue.tempC >= 31) {
       chaosScore += 9;
       deltaForDog += 3;
+      goalEnvDelta += GOAL_ENV.HEAT_HIGH;
       drivers.push({ icon: '🌡️', text: `${venue.tempC}°C kickoff — stamina premium, technical edges erode late`, delta: 3 });
     }
   }
@@ -149,6 +178,7 @@ export function computeChaos(match) {
   if (venue && !venue.indoors && venue.humidity >= 76) {
     chaosScore += 8;
     deltaForDog += 2;
+    goalEnvDelta += GOAL_ENV.HUMIDITY; // transitions dry up after the hour mark
     drivers.push({ icon: '💧', text: `${venue.humidity}% humidity — high-press systems hit a wall after 60 mins`, delta: 2 });
   }
 
@@ -157,10 +187,12 @@ export function computeChaos(match) {
     if (venue.rainProb >= 0.50) {
       chaosScore += 14;
       deltaForDog += 6;
+      goalEnvDelta += GOAL_ENV.RAIN_HEAVY; // greasy ball, scrappy finishing
       drivers.push({ icon: '🌧️', text: `${Math.round(venue.rainProb * 100)}% rain chance — wet pitch compresses the quality gap`, delta: 6 });
     } else if (venue.rainProb >= 0.35) {
       chaosScore += 7;
       deltaForDog += 3;
+      goalEnvDelta += GOAL_ENV.RAIN_MODERATE;
       drivers.push({ icon: '🌧️', text: `${Math.round(venue.rainProb * 100)}% rain chance — slick conditions add variance`, delta: 3 });
     }
   }
@@ -170,10 +202,12 @@ export function computeChaos(match) {
     if (venue.altitude >= 2000) {
       chaosScore += 18;
       deltaForDog += 6;
+      goalEnvDelta += GOAL_ENV.ALTITUDE_HIGH; // thin air saps legs, play slows
       drivers.push({ icon: '⛰️', text: `${(venue.altitude / 1000).toFixed(1)}km altitude — aerobic capacity drops ~15% for sea-level teams`, delta: 6 });
     } else if (venue.altitude >= 1500) {
       chaosScore += 10;
       deltaForDog += 4;
+      goalEnvDelta += GOAL_ENV.ALTITUDE_MED;
       drivers.push({ icon: '⛰️', text: `${venue.altitude}m altitude at ${venue.city} — high press systems fatigue faster here`, delta: 4 });
     }
   }
@@ -248,10 +282,12 @@ export function computeChaos(match) {
   if (dogTier === 'dominant') {
     chaosScore += 12;
     deltaForDog += 5;
+    goalEnvDelta += GOAL_ENV.ATTACK_FORM; // confident, attacking underdog
     drivers.push({ icon: '⚡', text: `${dogTeam?.name} unbeaten in WC 2026 (${dogRow.w}W ${dogRow.d}D) — dangerous streak`, delta: 5 });
   } else if (dogTier === 'good') {
     chaosScore += 7;
     deltaForDog += 3;
+    goalEnvDelta += GOAL_ENV.ATTACK_FORM * 0.5;
     drivers.push({ icon: '📈', text: `${dogTeam?.name} in form — ${dogRow.pts}pts from ${dogRow.mp} games builds confidence`, delta: 3 });
   } else if (dogTier === 'winless' || dogTier === 'poor') {
     chaosScore -= 5;
@@ -437,6 +473,9 @@ export function computeChaos(match) {
   // Limit directional adjustment to ±18 percentage points
   const clampedDelta = Math.min(18, Math.max(-18, Math.round(deltaForDog)));
 
+  // Clamp the total-goals environment swing so scorelines stay realistic
+  const clampedGoalEnv = Math.min(GOAL_ENV_CLAMP, Math.max(-GOAL_ENV_CLAMP, goalEnvDelta));
+
   // Sort drivers by absolute impact descending, cap at 5
   const topDrivers = [...drivers]
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
@@ -447,6 +486,7 @@ export function computeChaos(match) {
     level,
     drivers: topDrivers,
     deltaForDog:  clampedDelta,
+    goalEnvDelta: clampedGoalEnv,
     favId, dogId,
     favTeam, dogTeam,
     venue,

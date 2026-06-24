@@ -415,7 +415,7 @@ export default function App() {
             ) : view === 'groups' ? (
               <GroupsView probs={simResults} simMethod={simMethod} predictionMode={predictionMode} playerPhotos={playerPhotos} />
             ) : view === 'upsets' ? (
-              <UpsetsView simMethod={simMethod} playerPhotos={playerPhotos} />
+              <UpsetsView simMethod={simMethod} predictionMode={predictionMode} playerPhotos={playerPhotos} />
             ) : (
               <BracketView
                 probs={simResults}

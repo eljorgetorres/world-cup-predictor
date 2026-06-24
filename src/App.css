@@ -690,6 +690,48 @@ body {
 .delta-down { color: var(--accent); }
 
 /* ─── Footer: probability comparison ─────────────────────────── */
+.chaos-pred-mid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px 28px;
+  min-width: 132px;
+  border-right: 1px solid var(--border2);
+}
+
+.chaos-pred-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.chaos-pred-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.chaos-pred-goal {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 44px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--text);
+}
+
+.chaos-pred-dash {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--border);
+}
+
 .chaos-footer {
   display: flex;
   align-items: stretch;

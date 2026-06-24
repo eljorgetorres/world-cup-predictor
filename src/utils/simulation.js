@@ -310,6 +310,11 @@ export function getPrediction(homeId, awayId, method = 'elo') {
     awayWin:   Math.round((1 - homeWinP - drawP) * 100),
     homeGoals: Math.round(entry?.lambdaH ?? 1.3),
     awayGoals: Math.round(entry?.lambdaA ?? 1.0),
+    // Raw (unrounded) expected goals — consumers that blend in extra signal
+    // (e.g. UpsetsView's chaos-aware scoreline) need the float to avoid the
+    // premature-rounding clustering you get from homeGoals/awayGoals.
+    lambdaHome: entry?.lambdaH ?? 1.3,
+    lambdaAway: entry?.lambdaA ?? 1.0,
   };
 }
 

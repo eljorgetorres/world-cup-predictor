@@ -22,6 +22,28 @@ function formatDateHeader(utcMs) {
 
 const LEVEL_LABEL = { HIGH: 'HIGH', MED: 'MEDIUM', LOW: 'LOW' };
 
+// ── Predicted-score tunables ────────────────────────────────────────────────
+// MARGIN: how aggressively chaos bends the scoreline toward the underdog.
+// Interpreted as "goals of margin compression per percentage point of
+// win-probability shifted toward the underdog" (chaos.deltaForDog is in
+// percentage points, clamped to ±18). At the max +18 this is 18 * 0.06 ≈ 1.08
+// goals of compression, split evenly (each side moves ~0.54): a LOW-chaos match
+// barely moves off the base score, while a HIGH-chaos match can erase a
+// one-goal favourite's margin and flip a close game. Reusing deltaForDog keeps
+// the scoreline consistent with the "CHAOS ADJUSTED" win % shown on the card.
+const CHAOS_WEIGHT = 0.06;
+
+// TOTAL: how strongly the goal-environment signal (rain/heat/altitude/stakes,
+// summarised by chaos.goalEnvDelta in goals) scales the match's TOTAL expected
+// goals up or down. Without this, raw expected goals cluster near 1.3–2.0 and
+// every score rounds to 2–1/1–2. 1.0 applies the signal at face value; raise it
+// for more weather-driven spread, lower it to hug the base model totals.
+const GOAL_ENV_WEIGHT = 1.0;
+
+// Floor on total expected goals so suppression can still reach 0–0 but never
+// produces negative/empty expectations.
+const TOTAL_GOALS_FLOOR = 0.3;
+
 function formatMatchTime(dateStr) {
   const d = new Date(dateStr);
   const fmt = new Intl.DateTimeFormat('en-US', {
@@ -48,7 +70,7 @@ function ChaosBar({ score, level }) {
   );
 }
 
-function ChaosCard({ match, simMethod, now, playerPhotos }) {
+function ChaosCard({ match, simMethod, predictionMode, now, playerPhotos }) {
   const [teamView, setTeamView] = useState(null);
 
   const kickoff = new Date(match.date).getTime();
@@ -71,6 +93,38 @@ function ChaosCard({ match, simMethod, now, playerPhotos }) {
   const awayWinAdj = isFavHome ? dogWinAdj : favWinAdj;
 
   const deltaSign = chaos.deltaForDog >= 0 ? '+' : '';
+
+  // ── Chaos-blended predicted scoreline ──────────────────────────────────────
+  // Work from the RAW (unrounded) expected goals so the final round produces
+  // realistic variety instead of clustering at 2–1. computeChaos picks fav/dog
+  // by Elo, so resolve which side is the favourite first.
+  const rawFavGoals = isFavHome ? pred.lambdaHome : pred.lambdaAway;
+  const rawDogGoals = isFavHome ? pred.lambdaAway : pred.lambdaHome;
+  const baseTotal   = rawFavGoals + rawDogGoals;
+
+  // 1. TOTAL: scale the whole goal expectation by the goal-environment signal
+  // (rain/heat/altitude suppress; desperation/attacking form inflate), keeping
+  // each side's share of the base total.
+  const adjTotal = Math.max(
+    TOTAL_GOALS_FLOOR,
+    baseTotal + GOAL_ENV_WEIGHT * chaos.goalEnvDelta,
+  );
+  const favShare = baseTotal > 0 ? rawFavGoals / baseTotal : 0.5;
+  let favGoalsExp = adjTotal * favShare;
+  let dogGoalsExp = adjTotal * (1 - favShare);
+
+  // 2. MARGIN: convert the win-probability shift into an expected-goals shift,
+  // then split it — the favourite sheds half, the underdog gains half. Positive
+  // deltaForDog narrows the favourite's margin; negative widens it.
+  const chaosGoalShift = CHAOS_WEIGHT * chaos.deltaForDog;
+  favGoalsExp -= chaosGoalShift / 2;
+  dogGoalsExp += chaosGoalShift / 2;
+
+  const favGoalsAdj = Math.max(0, Math.round(favGoalsExp));
+  const dogGoalsAdj = Math.max(0, Math.round(dogGoalsExp));
+
+  const homeGoalsPred = isFavHome ? favGoalsAdj : dogGoalsAdj;
+  const awayGoalsPred = isFavHome ? dogGoalsAdj : favGoalsAdj;
 
   return (
     <>
@@ -120,6 +174,18 @@ function ChaosCard({ match, simMethod, now, playerPhotos }) {
               </span>
             </button>
           </div>
+
+          {/* Predicted score — centered in the middle gap (PREDICT mode only) */}
+          {predictionMode && (
+            <div className="chaos-pred-mid">
+              <span className="chaos-pred-label">PREDICTED SCORE</span>
+              <span className="chaos-pred-line">
+                <span className="chaos-pred-goal">{homeGoalsPred}</span>
+                <span className="chaos-pred-dash">–</span>
+                <span className="chaos-pred-goal">{awayGoalsPred}</span>
+              </span>
+            </div>
+          )}
 
           {/* Chaos score column */}
           <div className="chaos-score-panel">
@@ -184,7 +250,7 @@ function ChaosCard({ match, simMethod, now, playerPhotos }) {
   );
 }
 
-export default function UpsetsView({ simMethod, playerPhotos }) {
+export default function UpsetsView({ simMethod, predictionMode, playerPhotos }) {
   const now = Date.now();
 
   const todayET    = getETDateStr(now);
@@ -240,6 +306,7 @@ export default function UpsetsView({ simMethod, playerPhotos }) {
                 key={`${match.home}-${match.away}`}
                 match={match}
                 simMethod={simMethod}
+                predictionMode={predictionMode}
                 now={now}
                 playerPhotos={playerPhotos}
               />

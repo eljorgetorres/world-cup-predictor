@@ -355,6 +355,370 @@ body {
   color: var(--muted);
 }
 
+/* ─── Upsets / Chaos view ────────────────────────────────────── */
+.upsets-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.upsets-header {
+  padding: 28px clamp(16px, 3vw, 40px) 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.upsets-header-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.upsets-header-sub {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  max-width: 620px;
+  line-height: 1.5;
+}
+
+.upsets-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ─── Chaos card ──────────────────────────────────────────────── */
+.chaos-card {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+}
+
+.chaos-card-live {
+  border-left: 3px solid var(--accent);
+}
+
+.chaos-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px clamp(16px, 3vw, 40px) 7px;
+  border-bottom: 1px solid var(--border2);
+  background: var(--surface2);
+  flex-wrap: wrap;
+}
+
+/* ─── Body: teams + chaos score ───────────────────────────────── */
+.chaos-card-body {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 0 clamp(16px, 3vw, 40px);
+  border-bottom: 1px solid var(--border2);
+}
+
+.chaos-teams {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  padding: 20px 0;
+  border-right: 1px solid var(--border2);
+  min-width: 0;
+}
+
+.chaos-team {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 4px;
+  transition: background 0.12s;
+  width: 100%;
+}
+.chaos-team:hover { background: var(--surface2); }
+
+.chaos-flag {
+  font-size: 26px;
+  flex-shrink: 0;
+  width: 1.333em;
+  height: 1em;
+  display: inline-block;
+  background-size: contain;
+  background-position: 50%;
+  background-repeat: no-repeat;
+  border-radius: 2px;
+}
+
+.chaos-team-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.chaos-team-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chaos-team-elo {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.3px;
+}
+
+.chaos-team-pct {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--text);
+  flex-shrink: 0;
+  min-width: 44px;
+  text-align: right;
+}
+.chaos-pct-dog { color: var(--muted); }
+
+.chaos-teams-draw {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.chaos-draw-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.chaos-draw-pct {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* ─── Chaos score panel ───────────────────────────────────────── */
+.chaos-score-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px 0 20px 36px;
+  min-width: 220px;
+}
+
+.chaos-score-header {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.chaos-score-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.chaos-score-num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 54px;
+  font-weight: 900;
+  line-height: 1;
+}
+.chaos-num-high { color: var(--accent); }
+.chaos-num-med  { color: var(--accent-warm); }
+.chaos-num-low  { color: var(--muted); }
+
+.chaos-score-denom {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--muted);
+  align-self: flex-end;
+  margin-bottom: 6px;
+}
+
+.chaos-level-badge {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 3px;
+  align-self: flex-end;
+  margin-bottom: 8px;
+}
+.chaos-level-high {
+  background: rgba(232,0,45,0.12);
+  color: var(--accent);
+  border: 1px solid rgba(232,0,45,0.3);
+}
+.chaos-level-med {
+  background: rgba(201,162,39,0.12);
+  color: var(--accent-warm);
+  border: 1px solid rgba(201,162,39,0.3);
+}
+.chaos-level-low {
+  background: rgba(74,169,110,0.1);
+  color: var(--green);
+  border: 1px solid rgba(74,169,110,0.25);
+}
+
+/* ─── Chaos bar ───────────────────────────────────────────────── */
+.chaos-bar-wrap {
+  height: 5px;
+  background: var(--border2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.chaos-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.chaos-bar-high { background: var(--accent); }
+.chaos-bar-med  { background: var(--accent-warm); }
+.chaos-bar-low  { background: var(--green); }
+
+/* ─── Drivers list ────────────────────────────────────────────── */
+.chaos-drivers {
+  padding: 14px clamp(16px, 3vw, 40px);
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chaos-drivers-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.chaos-driver-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.chaos-driver-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+  margin-top: 1px;
+}
+
+.chaos-driver-text {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  flex: 1;
+  line-height: 1.4;
+}
+
+.chaos-driver-delta {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.delta-up   { color: var(--green); }
+.delta-down { color: var(--accent); }
+
+/* ─── Footer: probability comparison ─────────────────────────── */
+.chaos-footer {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 12px clamp(16px, 3vw, 40px);
+  background: var(--surface2);
+}
+
+.chaos-footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.chaos-footer-divider {
+  width: 1px;
+  background: var(--border2);
+  margin: 0 24px;
+  flex-shrink: 0;
+}
+
+.chaos-footer-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.chaos-footer-val {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.chaos-footer-val strong {
+  font-weight: 800;
+  color: var(--text);
+}
+
+.chaos-footer-sep { color: var(--border); }
+
+.chaos-adj-tag {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-left: 4px;
+}
+.chaos-adj-tag.delta-up   { background: rgba(74,169,110,0.1);  color: var(--green); }
+.chaos-adj-tag.delta-down { background: rgba(232,0,45,0.08);   color: var(--accent); }
+
 .spinner {
   width: 44px;
   height: 44px;

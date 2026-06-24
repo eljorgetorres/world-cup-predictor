@@ -5,6 +5,7 @@ import { runSimulation, getSlotProbs, buildMatchupTable, getPrediction, SIM_METH
 import WinnerBanner from './components/WinnerBanner.jsx';
 import GroupsView from './components/GroupsView.jsx';
 import BracketView from './components/BracketView.jsx';
+import UpsetsView from './components/UpsetsView.jsx';
 import TeamModal from './components/TeamModal.jsx';
 import FlagIcon from './components/FlagIcon.jsx';
 import { TEAMS } from './data/teams.js';
@@ -391,9 +392,7 @@ export default function App() {
             ) : view === 'groups' ? (
               <GroupsView probs={simResults} simMethod={simMethod} predictionMode={predictionMode} playerPhotos={playerPhotos} />
             ) : view === 'upsets' ? (
-              <div className="coming-soon-view">
-                <div className="coming-soon-label">COMING SOON</div>
-              </div>
+              <UpsetsView simMethod={simMethod} playerPhotos={playerPhotos} />
             ) : (
               <BracketView
                 probs={simResults}

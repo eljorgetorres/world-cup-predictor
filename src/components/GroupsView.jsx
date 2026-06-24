@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { TEAMS } from '../data/teams.js';
 import { GROUP_STANDINGS, GROUP_NAMES, REMAINING_MATCHES } from '../data/groups.js';
 import { computeAllGroupStatuses } from '../utils/groupStatus.js';
+import { rankGroupRows, playedGroupMatches } from '../utils/standings.js';
 import { getPrediction } from '../utils/simulation.js';
 import TeamModal from './TeamModal.jsx';
 import FlagIcon from './FlagIcon.jsx';
@@ -17,6 +18,7 @@ function gdStr(row) {
 function predictGroupStandings(groupId, simMethod) {
   const rows = GROUP_STANDINGS[groupId].map(r => ({ ...r }));
   const remaining = REMAINING_MATCHES[groupId] ?? [];
+  const matches = playedGroupMatches(groupId).slice();
 
   for (const { home, away } of remaining) {
     const pred = getPrediction(home, away, simMethod);
@@ -40,14 +42,11 @@ function predictGroupStandings(groupId, simMethod) {
       a.pts += 3; a.w++;
       h.l++;
     }
+
+    matches.push({ home, away, hg: hGoals, ag: aGoals });
   }
 
-  return rows.sort((a, b) => {
-    if (b.pts !== a.pts) return b.pts - a.pts;
-    const gdDiff = gd(b) - gd(a);
-    if (gdDiff !== 0) return gdDiff;
-    return b.gf - a.gf;
-  });
+  return rankGroupRows(rows, matches);
 }
 
 // In WC2026, 12 groups → top 2 qualify (24 teams) + best 8 third-place (8 teams) = 32 R32 teams
@@ -82,12 +81,7 @@ function computePredictedQualifiers(allStandings) {
 
 function GroupCard({ groupId, predictionMode, simMethod, onTeamClick, predictedQualifiers }) {
   const currentRows = useMemo(() => {
-    return [...GROUP_STANDINGS[groupId]].sort((a, b) => {
-      if (b.pts !== a.pts) return b.pts - a.pts;
-      const gdDiff = gd(b) - gd(a);
-      if (gdDiff !== 0) return gdDiff;
-      return b.gf - a.gf;
-    });
+    return rankGroupRows(GROUP_STANDINGS[groupId], playedGroupMatches(groupId));
   }, [groupId]);
 
   const predictedRows = useMemo(() => {
@@ -121,14 +115,20 @@ function GroupCard({ groupId, predictionMode, simMethod, onTeamClick, predictedQ
             const team = TEAMS[row.teamId];
             const st = statuses[row.teamId] ?? 'maybe';
 
-            // Prediction mode: derive status from predictedQualifiers set
+            // Prediction mode: three states — qualify / undecided / eliminated.
+            // "Eliminated" only if the group simulation says they can NEVER be top 3
+            // (neverTop3). A team predicted 3rd-but-not-best-8 is undecided, not out.
             const predictQualify = predictionMode && predictedQualifiers?.has(row.teamId);
             const dotClass = predictionMode
-              ? predictQualify ? 'qs-confirmed' : 'qs-eliminated'
+              ? predictQualify
+                ? 'qs-confirmed'
+                : (st === 'eliminated' ? 'qs-eliminated' : 'qs-maybe')
               : `qs-${st}`;
 
             const rowClass = predictionMode
-              ? (predictQualify ? 'row-status-confirmed' : 'row-status-eliminated')
+              ? predictQualify
+                ? 'row-status-confirmed'
+                : (st === 'eliminated' ? 'row-status-eliminated' : 'row-status-maybe')
               : `row-status-${st}`;
 
             return (
@@ -162,7 +162,8 @@ function GroupCard({ groupId, predictionMode, simMethod, onTeamClick, predictedQ
         {predictionMode ? (
           <>
             <span className="gf-item"><span className="gf-dot qs-confirmed" /> Predicted qualify</span>
-            <span className="gf-item"><span className="gf-dot qs-eliminated" /> Predicted out</span>
+            <span className="gf-item"><span className="gf-dot qs-maybe" /> Undecided</span>
+            <span className="gf-item"><span className="gf-dot qs-eliminated" /> Eliminated</span>
           </>
         ) : (
           <>

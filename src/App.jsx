@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import 'flag-icons/css/flag-icons.min.css';
 import './App.css';
 import { runSimulation, getSlotProbs, buildMatchupTable, getPrediction, SIM_METHODS } from './utils/simulation.js';
@@ -102,6 +102,24 @@ function matchdayLabel(dateStr) {
 
 // ─── Next Match widget ──────────────────────────────────────────────────────
 
+function MatchPair({ match }) {
+  const home = TEAMS[match.home];
+  const away = TEAMS[match.away];
+  return (
+    <div className="next-match-teams">
+      <div className="nm-team">
+        <FlagIcon teamId={match.home} className="nm-flag" />
+        <span className="nm-name">{home?.name}</span>
+      </div>
+      <span className="nm-vs">vs</span>
+      <div className="nm-team">
+        <FlagIcon teamId={match.away} className="nm-flag" />
+        <span className="nm-name">{away?.name}</span>
+      </div>
+    </div>
+  );
+}
+
 function NextMatch() {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -109,31 +127,36 @@ function NextMatch() {
     return () => clearInterval(id);
   }, []);
 
-  const next = UPCOMING_MATCHES.find(m => new Date(m.date).getTime() > now - 2 * 60 * 60 * 1000);
-  if (!next) return null;
+  // Collect live matches first; fall back to the next simultaneous kickoff batch
+  const live = UPCOMING_MATCHES.filter(m => {
+    const t = new Date(m.date).getTime();
+    return t <= now && now < t + 2 * 60 * 60 * 1000;
+  });
 
-  const matchTime = new Date(next.date).getTime();
-  const isLive = matchTime <= now && now < matchTime + 2 * 60 * 60 * 1000;
-  const home = TEAMS[next.home];
-  const away = TEAMS[next.away];
+  let batch, isLive;
+  if (live.length > 0) {
+    batch = live;
+    isLive = true;
+  } else {
+    const future = UPCOMING_MATCHES.filter(m => new Date(m.date).getTime() > now);
+    if (future.length === 0) return null;
+    const nextTime = new Date(future[0].date).getTime();
+    batch = future.filter(m => new Date(m.date).getTime() === nextTime);
+    isLive = false;
+  }
 
   return (
     <div className="wc-header-next">
       <div className={`next-match-pill${isLive ? ' pill-live' : ' pill-next'}`}>
         {isLive ? 'LIVE' : 'NEXT'}
       </div>
-      <div className="next-match-teams">
-        <div className="nm-team">
-          <FlagIcon teamId={next.home} className="nm-flag" />
-          <span className="nm-name">{home?.name}</span>
-        </div>
-        <span className="nm-vs">vs</span>
-        <div className="nm-team">
-          <FlagIcon teamId={next.away} className="nm-flag" />
-          <span className="nm-name">{away?.name}</span>
-        </div>
-      </div>
-      <span className="next-match-meta">{formatMatchTime(next.date)}</span>
+      {batch.slice(0, 2).map((m, i) => (
+        <Fragment key={`${m.home}-${m.away}`}>
+          {i > 0 && <div className="nm-match-sep" />}
+          <MatchPair match={m} />
+        </Fragment>
+      ))}
+      <span className="next-match-meta">{formatMatchTime(batch[0].date)}</span>
     </div>
   );
 }
@@ -299,7 +322,7 @@ function GamesView({ simMethod, predictionMode, playerPhotos }) {
 // ─── App root ────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [view, setView] = useState('games');
+  const [view, setView] = useState('upsets');
   const [allProbs, setAllProbs] = useState(null);
   const [slotProbs, setSlotProbs] = useState(null);
   const [matchupTables, setMatchupTables] = useState(null);
@@ -381,10 +404,10 @@ export default function App() {
                 <span className="nav-predict-badge">{predictionMode ? 'ON' : 'OFF'}</span>
               </button>
               <div className="stage-nav-sep" />
+              <button className={`stage-tab${view === 'upsets'  ? ' active' : ''}`} onClick={() => setView('upsets')}>UPSETS</button>
               <button className={`stage-tab${view === 'games'   ? ' active' : ''}`} onClick={() => setView('games')}>GAMES</button>
               <button className={`stage-tab${view === 'bracket' ? ' active' : ''}`} onClick={() => setView('bracket')}>BRACKET</button>
               <button className={`stage-tab${view === 'groups'  ? ' active' : ''}`} onClick={() => setView('groups')}>GROUPS</button>
-              <button className={`stage-tab${view === 'upsets'  ? ' active' : ''}`} onClick={() => setView('upsets')}>UPSETS</button>
             </nav>
 
             {view === 'games' ? (

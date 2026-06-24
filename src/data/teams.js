@@ -35,7 +35,7 @@ export const TEAMS = {
   GHA: { id: 'GHA', name: 'Ghana',           group: 'L', elo: 1651, rank: 34 },
   ALG: { id: 'ALG', name: 'Algeria',         group: 'J', elo: 1657, rank: 35 },
   CZE: { id: 'CZE', name: 'Czechia',         group: 'A', elo: 1663, rank: 36 },
-  BIH: { id: 'BIH', name: 'Bosnia & Herz.',  group: 'B', elo: 1641, rank: 37 },
+  BIH: { id: 'BIH', name: 'Bosnia & Herzegovina', group: 'B', elo: 1641, rank: 37 },
   KSA: { id: 'KSA', name: 'Saudi Arabia',    group: 'H', elo: 1647, rank: 38 },
   RSA: { id: 'RSA', name: 'South Africa',    group: 'A', elo: 1620, rank: 39 },
   CPV: { id: 'CPV', name: 'Cape Verde',      group: 'H', elo: 1601, rank: 40 },

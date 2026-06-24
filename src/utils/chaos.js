@@ -103,7 +103,7 @@ export function computeChaos(match) {
     chaosScore += 12;
     deltaForDog += 2;
     drivers.push({ icon: '⚖️', text: `Tight ELO gap (${eloDiff}pts) — model barely separates these teams`, delta: 2 });
-  } else if (eloDiff < 250) {
+  } else if (eloDiff < 220) {
     chaosScore += 6;
   }
 
@@ -121,14 +121,15 @@ export function computeChaos(match) {
   const favPts = favRow?.pts ?? 0;
   const dogPts = dogRow?.pts ?? 0;
   const favMp  = favRow?.mp  ?? 0;
-  if (favMp >= 1 && Math.abs(favPts - dogPts) <= 1) {
-    chaosScore += 14;
-    deltaForDog += 4;
-    drivers.push({ icon: '🎯', text: `Tight on points (${favPts} vs ${dogPts}) — must-win pressure compresses gap`, delta: 4 });
-  } else if (favPts === 0 && dogPts === 0 && favMp >= 1) {
+  const dogMp  = dogRow?.mp  ?? 0;
+  if (favMp >= 1 && dogMp >= 1 && favPts === 0 && dogPts === 0) {
     chaosScore += 16;
     deltaForDog += 5;
     drivers.push({ icon: '🎯', text: `Both teams winless — elimination-style desperation from the underdog`, delta: 5 });
+  } else if (favMp >= 1 && Math.abs(favPts - dogPts) <= 1) {
+    chaosScore += 14;
+    deltaForDog += 4;
+    drivers.push({ icon: '🎯', text: `Tight on points (${favPts} vs ${dogPts}) — must-win pressure compresses gap`, delta: 4 });
   }
 
   // ── 4. Temperature — outdoor venues only ──

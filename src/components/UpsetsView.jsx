@@ -6,6 +6,20 @@ import { computeChaos } from '../utils/chaos.js';
 import FlagIcon from './FlagIcon.jsx';
 import TeamModal from './TeamModal.jsx';
 
+function getETDateStr(utcMs) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date(utcMs));
+}
+
+function formatDateHeader(utcMs) {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'long', month: 'long', day: 'numeric',
+  }).format(new Date(utcMs));
+}
+
 const LEVEL_LABEL = { HIGH: 'HIGH', MED: 'MEDIUM', LOW: 'LOW' };
 
 function formatMatchTime(dateStr) {
@@ -129,7 +143,6 @@ function ChaosCard({ match, simMethod, now, playerPhotos }) {
             <div className="chaos-drivers-title">TOP CHAOS SIGNALS</div>
             {chaos.drivers.map((d, i) => (
               <div key={i} className="chaos-driver-row">
-                <span className="chaos-driver-icon">{d.icon}</span>
                 <span className="chaos-driver-text">{d.text}</span>
                 <span className={`chaos-driver-delta ${d.delta >= 0 ? 'delta-up' : 'delta-down'}`}>
                   {d.delta >= 0 ? '+' : ''}{d.delta}%
@@ -174,22 +187,22 @@ function ChaosCard({ match, simMethod, now, playerPhotos }) {
 export default function UpsetsView({ simMethod, playerPhotos }) {
   const now = Date.now();
 
-  const upcoming = UPCOMING_MATCHES.filter(
-    m => new Date(m.date).getTime() + 2 * 60 * 60 * 1000 > now
-  );
+  const todayET    = getETDateStr(now);
+  const tomorrowET = getETDateStr(now + 86400000);
 
-  // Compute chaos and sort: live first, then by chaos score desc, then chronological
-  const withChaos = upcoming.map(m => ({
-    match: m,
-    chaos: computeChaos(m),
-    kickoff: new Date(m.date).getTime(),
-    isLive: new Date(m.date).getTime() <= now && now < new Date(m.date).getTime() + 7200000,
-  })).sort((a, b) => {
-    if (a.isLive !== b.isLive) return a.isLive ? -1 : 1;
-    return b.chaos.chaosScore - a.chaos.chaosScore;
+  const upcoming = UPCOMING_MATCHES.filter(m => {
+    const kickoff = new Date(m.date).getTime();
+    const isNotOver = kickoff + 2 * 60 * 60 * 1000 > now;
+    const matchDateET = getETDateStr(kickoff);
+    return isNotOver && (matchDateET === todayET || matchDateET === tomorrowET);
   });
 
-  if (withChaos.length === 0) {
+  // Sort chronologically (chaos still computed per-card)
+  const sorted = upcoming
+    .map(m => ({ match: m, kickoff: new Date(m.date).getTime() }))
+    .sort((a, b) => a.kickoff - b.kickoff);
+
+  if (sorted.length === 0) {
     return (
       <div className="coming-soon-view">
         <div className="coming-soon-label">NO UPCOMING MATCHES</div>
@@ -197,26 +210,43 @@ export default function UpsetsView({ simMethod, playerPhotos }) {
     );
   }
 
+  // Group by ET date, preserving chronological order
+  const byDate = [];
+  for (const item of sorted) {
+    const key = getETDateStr(item.kickoff);
+    let group = byDate.find(g => g.key === key);
+    if (!group) {
+      group = { key, label: formatDateHeader(item.kickoff), items: [] };
+      byDate.push(group);
+    }
+    group.items.push(item);
+  }
+
   return (
     <div className="upsets-view">
       <div className="upsets-header">
         <div className="upsets-header-title">CHAOS INDEX</div>
         <div className="upsets-header-sub">
-          Signals Dixon-Coles ignores — weather, altitude, crowd lean, momentum, media pressure. Sorted by upset likelihood.
+          Today &amp; tomorrow — weather, altitude, crowd lean, travel, body clock, momentum. Sorted by date.
         </div>
       </div>
 
-      <div className="upsets-cards">
-        {withChaos.map(({ match }) => (
-          <ChaosCard
-            key={`${match.home}-${match.away}`}
-            match={match}
-            simMethod={simMethod}
-            now={now}
-            playerPhotos={playerPhotos}
-          />
-        ))}
-      </div>
+      {byDate.map(group => (
+        <div className="upsets-date-group" key={group.key}>
+          <div className="upsets-date-header">{group.label}</div>
+          <div className="upsets-cards">
+            {group.items.map(({ match }) => (
+              <ChaosCard
+                key={`${match.home}-${match.away}`}
+                match={match}
+                simMethod={simMethod}
+                now={now}
+                playerPhotos={playerPhotos}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import {
   R32_MATCHES, R16_MATCHES, QF_MATCHES, SF_MATCHES,
   THIRD_PLACE_ELIGIBILITY,
 } from '../data/bracket.js';
+import { rankGroupRows, playedGroupMatches } from './standings.js';
 
 // ── Core math ─────────────────────────────────────────────────────────────────
 
@@ -181,16 +182,6 @@ function simKnockout(teamAId, teamBId, table) {
 
 function cloneStandings(standings) { return standings.map(s => ({ ...s })); }
 
-function sortStandings(standings) {
-  return [...standings].sort((a, b) => {
-    const ptsDiff = b.pts - a.pts;
-    if (ptsDiff !== 0) return ptsDiff;
-    const gdA = a.gf - a.ga, gdB = b.gf - b.ga;
-    if (gdB !== gdA) return gdB - gdA;
-    return b.gf - a.gf;
-  });
-}
-
 function applyResult(standings, homeId, awayId, result) {
   const home = standings.find(s => s.teamId === homeId);
   const away = standings.find(s => s.teamId === awayId);
@@ -209,10 +200,15 @@ function applyResult(standings, homeId, awayId, result) {
 
 function simulateGroup(groupId, table) {
   const standings = cloneStandings(GROUP_STANDINGS[groupId]);
+  const matches = playedGroupMatches(groupId).slice();
   for (const match of REMAINING_MATCHES[groupId]) {
-    applyResult(standings, match.home, match.away, simGroupMatch(match.home, match.away, table));
+    const result = simGroupMatch(match.home, match.away, table);
+    applyResult(standings, match.home, match.away, result);
+    const hg = result === 'home' ? 2 : result === 'draw' ? 1 : 0;
+    const ag = result === 'away' ? 2 : result === 'draw' ? 1 : 0;
+    matches.push({ home: match.home, away: match.away, hg, ag });
   }
-  return sortStandings(standings);
+  return rankGroupRows(standings, matches);
 }
 
 function assignThirdPlaceSlots(qualifying3rd) {

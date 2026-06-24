@@ -63,7 +63,8 @@ body {
   display: flex;
   align-items: center;
   gap: 24px;
-  flex-shrink: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .wc-header-title {
@@ -104,6 +105,16 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.nm-match-sep {
+  width: 1px;
+  height: 28px;
+  background: rgba(255,255,255,0.15);
+  flex-shrink: 0;
+  margin: 0 6px;
 }
 
 .next-match-pill {
@@ -389,13 +400,38 @@ body {
 .upsets-cards {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 10px;
+}
+
+.upsets-date-group {
+  padding: 0 clamp(16px, 3vw, 40px);
+}
+.upsets-date-group + .upsets-date-group {
+  margin-top: 8px;
+}
+
+.upsets-date-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text);
+  background: var(--bg);
+  padding: 16px 0 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border2);
 }
 
 /* ─── Chaos card ──────────────────────────────────────────────── */
 .chaos-card {
   background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
   transition: background 0.12s;
 }
 
@@ -494,6 +530,7 @@ body {
   flex-shrink: 0;
   min-width: 44px;
   text-align: right;
+  margin-right: 20px;
 }
 .chaos-pct-dog { color: var(--muted); }
 
@@ -633,13 +670,6 @@ body {
   gap: 10px;
 }
 
-.chaos-driver-icon {
-  font-size: 14px;
-  flex-shrink: 0;
-  width: 20px;
-  text-align: center;
-  margin-top: 1px;
-}
 
 .chaos-driver-text {
   font-family: 'Barlow Condensed', sans-serif;
@@ -702,6 +732,7 @@ body {
   flex-wrap: wrap;
 }
 .chaos-footer-val strong {
+  font-size: 16px;
   font-weight: 800;
   color: var(--text);
 }
@@ -1486,7 +1517,7 @@ body {
 .matchup-date  { font-size: 13px; font-weight: 600; color: var(--text); }
 .matchup-venue { font-size: 11px; color: var(--muted); }
 
-.bmu-modal { max-width: 680px; }
+.bmu-modal { max-width: 960px; }
 
 /* ─── Lineup / Pitch ──────────────────────────────────────────── */
 .lineup-label {
@@ -2180,6 +2211,73 @@ body {
   text-transform: uppercase;
   padding: 3px 8px;
 }
+
+/* Bracket matchup modal — must come after legacy game-card rules to win cascade. */
+.bmu-modal .game-card-body {
+  flex-direction: column;
+}
+.bmu-modal .game-card-left {
+  flex: none;
+  width: 100%;
+  min-width: 0;
+  padding: 20px 28px 16px;
+}
+.bmu-modal .game-card-divider {
+  width: calc(100% - 40px);
+  height: 1px;
+  margin: 0 20px;
+}
+.bmu-modal .game-card-right {
+  flex: none;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  padding: 16px 28px 20px;
+}
+.bmu-modal .game-matchup {
+  justify-content: center;
+  gap: 20px 28px;
+}
+.bmu-modal .game-team {
+  flex: 1 1 140px;
+  min-width: 120px;
+  max-width: 280px;
+  align-items: center;
+}
+.bmu-modal .game-team-right {
+  flex-direction: row-reverse;
+}
+.bmu-modal .game-team-btn {
+  min-width: 120px;
+  width: 100%;
+}
+.bmu-modal .game-center-block {
+  width: 72px;
+  flex-shrink: 0;
+}
+.bmu-modal .game-name {
+  line-height: 1.1;
+  word-break: keep-all;   /* never break mid-word */
+  overflow-wrap: normal;  /* wrap at spaces only */
+  hyphens: none;
+  white-space: normal;
+}
+.bmu-modal .game-team-right .game-name {
+  text-align: right;
+}
+.bmu-modal .game-stat-title {
+  text-align: center;
+}
+.bmu-modal .game-stats-table {
+  table-layout: fixed;
+}
+.bmu-modal .game-stats-table th.gst-home,
+.bmu-modal .game-stats-table td.gst-home { width: 35%; }
+.bmu-modal .game-stats-table th.gst-label,
+.bmu-modal .game-stats-table td.gst-label { width: 30%; text-align: center; }
+.bmu-modal .game-stats-table th.gst-away,
+.bmu-modal .game-stats-table td.gst-away { width: 35%; }
+
 /* ─── End Legacy ─────────────────────────────────────────────── */
 
 /* ─── Responsive ──────────────────────────────────────────────── */

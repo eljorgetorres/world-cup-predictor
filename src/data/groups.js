@@ -1,4 +1,4 @@
-// Current group standings as of June 22, 2026 (includes ARG 2–0 AUT)
+// Current group standings as of June 24, 2026 (all MD2 complete)
 // Each entry: { teamId, mp, w, d, l, gf, ga, pts }
 export const GROUP_STANDINGS = {
   A: [
@@ -50,32 +50,32 @@ export const GROUP_STANDINGS = {
     { teamId: 'KSA', mp: 2, w: 0, d: 1, l: 1, gf: 1, ga: 5, pts: 1 },
   ],
   I: [
-    { teamId: 'NOR', mp: 1, w: 1, d: 0, l: 0, gf: 4, ga: 1, pts: 3 },
-    { teamId: 'FRA', mp: 1, w: 1, d: 0, l: 0, gf: 3, ga: 1, pts: 3 },
-    { teamId: 'SEN', mp: 1, w: 0, d: 0, l: 1, gf: 1, ga: 3, pts: 0 },
-    { teamId: 'IRQ', mp: 1, w: 0, d: 0, l: 1, gf: 1, ga: 4, pts: 0 },
+    { teamId: 'FRA', mp: 2, w: 2, d: 0, l: 0, gf: 6, ga: 1, pts: 6 },  // MD2: FRA 3-0 IRQ
+    { teamId: 'NOR', mp: 2, w: 2, d: 0, l: 0, gf: 7, ga: 3, pts: 6 },  // MD2: NOR 3-2 SEN
+    { teamId: 'SEN', mp: 2, w: 0, d: 0, l: 2, gf: 3, ga: 6, pts: 0 },
+    { teamId: 'IRQ', mp: 2, w: 0, d: 0, l: 2, gf: 1, ga: 7, pts: 0 },
   ],
   J: [
     { teamId: 'ARG', mp: 2, w: 2, d: 0, l: 0, gf: 5, ga: 0, pts: 6 },
     { teamId: 'AUT', mp: 2, w: 1, d: 0, l: 1, gf: 3, ga: 3, pts: 3 },
-    { teamId: 'JOR', mp: 1, w: 0, d: 0, l: 1, gf: 1, ga: 3, pts: 0 },
-    { teamId: 'ALG', mp: 1, w: 0, d: 0, l: 1, gf: 0, ga: 3, pts: 0 },
+    { teamId: 'ALG', mp: 2, w: 1, d: 0, l: 1, gf: 2, ga: 4, pts: 3 },  // MD2: ALG 2-1 JOR
+    { teamId: 'JOR', mp: 2, w: 0, d: 0, l: 2, gf: 2, ga: 5, pts: 0 },  // eliminated
   ],
   K: [
-    { teamId: 'COL', mp: 1, w: 1, d: 0, l: 0, gf: 3, ga: 1, pts: 3 },
-    { teamId: 'DRC', mp: 1, w: 0, d: 1, l: 0, gf: 1, ga: 1, pts: 1 },
-    { teamId: 'POR', mp: 1, w: 0, d: 1, l: 0, gf: 1, ga: 1, pts: 1 },
-    { teamId: 'UZB', mp: 1, w: 0, d: 0, l: 1, gf: 1, ga: 3, pts: 0 },
+    { teamId: 'COL', mp: 2, w: 2, d: 0, l: 0, gf: 4, ga: 1, pts: 6 },  // MD2: COL 1-0 DRC
+    { teamId: 'POR', mp: 2, w: 1, d: 1, l: 0, gf: 6, ga: 1, pts: 4 },  // MD2: POR 5-0 UZB
+    { teamId: 'DRC', mp: 2, w: 0, d: 1, l: 1, gf: 1, ga: 2, pts: 1 },
+    { teamId: 'UZB', mp: 2, w: 0, d: 0, l: 2, gf: 1, ga: 8, pts: 0 },
   ],
   L: [
-    { teamId: 'ENG', mp: 1, w: 1, d: 0, l: 0, gf: 4, ga: 2, pts: 3 },
-    { teamId: 'GHA', mp: 1, w: 1, d: 0, l: 0, gf: 1, ga: 0, pts: 3 },
-    { teamId: 'PAN', mp: 1, w: 0, d: 0, l: 1, gf: 0, ga: 1, pts: 0 },
-    { teamId: 'CRO', mp: 1, w: 0, d: 0, l: 1, gf: 2, ga: 4, pts: 0 },
+    { teamId: 'ENG', mp: 2, w: 1, d: 1, l: 0, gf: 4, ga: 2, pts: 4 },  // MD2: ENG 0-0 GHA
+    { teamId: 'GHA', mp: 2, w: 1, d: 1, l: 0, gf: 1, ga: 0, pts: 4 },  // MD2: ENG 0-0 GHA
+    { teamId: 'CRO', mp: 2, w: 1, d: 0, l: 1, gf: 3, ga: 4, pts: 3 },  // MD2: PAN 0-1 CRO
+    { teamId: 'PAN', mp: 2, w: 0, d: 0, l: 2, gf: 0, ga: 2, pts: 0 },  // eliminated
   ],
 };
 
-// Remaining matches per group (not yet played as of June 22, 2026)
+// Remaining matches per group (not yet played as of June 24, 2026)
 export const REMAINING_MATCHES = {
   A: [
     { home: 'CZE', away: 'MEX' },
@@ -110,26 +110,18 @@ export const REMAINING_MATCHES = {
     { home: 'KSA', away: 'CPV' },
   ],
   I: [
-    { home: 'FRA', away: 'IRQ' },
-    { home: 'NOR', away: 'SEN' },
     { home: 'FRA', away: 'NOR' },
     { home: 'SEN', away: 'IRQ' },
   ],
   J: [
-    // ARG vs AUT played June 22: ARG 2–0 AUT
-    { home: 'ALG', away: 'JOR' },
     { home: 'ARG', away: 'JOR' },
     { home: 'ALG', away: 'AUT' },
   ],
   K: [
-    { home: 'COL', away: 'DRC' },
-    { home: 'POR', away: 'UZB' },
     { home: 'COL', away: 'POR' },
     { home: 'DRC', away: 'UZB' },
   ],
   L: [
-    { home: 'ENG', away: 'GHA' },
-    { home: 'PAN', away: 'CRO' },
     { home: 'PAN', away: 'ENG' },
     { home: 'CRO', away: 'GHA' },
   ],

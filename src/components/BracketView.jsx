@@ -302,6 +302,10 @@ function gdStr(s) {
   return d > 0 ? `+${d}` : `${d}`;
 }
 
+function GameName({ name }) {
+  return <span className="game-name">{name ?? 'TBD'}</span>;
+}
+
 // ─── Matchup Modal ────────────────────────────────────────────────────────────
 function MatchupModal({ matchId, sp, advProbs, predictionMode, simMethod, playerPhotos, onClose, koWin }) {
   const [teamView, setTeamView] = useState(null);
@@ -372,7 +376,7 @@ function MatchupModal({ matchId, sp, advProbs, predictionMode, simMethod, player
                     disabled={!t1id}
                   >
                     <FlagIcon teamId={t1id} className="game-flag" />
-                    <span className="game-name">{t1?.name ?? 'TBD'}</span>
+                    <GameName name={t1?.name} />
                   </button>
 
                   <div className="game-center-block">
@@ -394,7 +398,7 @@ function MatchupModal({ matchId, sp, advProbs, predictionMode, simMethod, player
                     onClick={() => t2id && setTeamView(t2id)}
                     disabled={!t2id}
                   >
-                    <span className="game-name">{t2?.name ?? 'TBD'}</span>
+                    <GameName name={t2?.name} />
                     <FlagIcon teamId={t2id} className="game-flag" />
                   </button>
                 </div>

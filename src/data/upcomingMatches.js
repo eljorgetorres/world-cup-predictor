@@ -1,15 +1,6 @@
 // All remaining group stage matches. `date` is the authoritative UTC kickoff time.
 // Display time is computed dynamically from `date` in America/New_York timezone.
 export const UPCOMING_MATCHES = [
-  // ── Matchday 2 · Jun 22–23 ET ───────────────────────────────────────────
-  // ARG vs AUT (Jun 22, completed 2–0) — removed
-  { home: 'FRA', away: 'IRQ', group: 'I', date: '2026-06-22T21:00:00Z', venue: 'Lincoln Financial Field · Philadelphia, PA' },
-  { home: 'NOR', away: 'SEN', group: 'I', date: '2026-06-23T00:00:00Z', venue: 'MetLife Stadium · East Rutherford, NJ' },
-  { home: 'ALG', away: 'JOR', group: 'J', date: '2026-06-23T03:00:00Z', venue: "Levi's Stadium · Santa Clara, CA" },
-  { home: 'POR', away: 'UZB', group: 'K', date: '2026-06-23T17:00:00Z', venue: 'NRG Stadium · Houston, TX' },
-  { home: 'ENG', away: 'GHA', group: 'L', date: '2026-06-23T20:00:00Z', venue: 'Gillette Stadium · Foxborough, MA' },
-  { home: 'PAN', away: 'CRO', group: 'L', date: '2026-06-23T23:00:00Z', venue: 'BMO Field · Toronto, CAN' },
-  { home: 'COL', away: 'DRC', group: 'K', date: '2026-06-24T02:00:00Z', venue: 'Estadio Akron · Guadalajara, MEX' },
   // ── Matchday 3 · Jun 24–27 ET ───────────────────────────────────────────
   { home: 'CAN', away: 'SUI', group: 'B', date: '2026-06-24T19:00:00Z', venue: 'BC Place · Vancouver, CAN' },
   { home: 'BIH', away: 'QAT', group: 'B', date: '2026-06-24T19:00:00Z', venue: 'Lumen Field · Seattle, WA' },

@@ -1,10 +1,32 @@
 import { TEAMS } from '../data/teams.js';
 import { GROUP_STANDINGS } from '../data/groups.js';
 import { UPCOMING_MATCHES } from '../data/upcomingMatches.js';
-import { getVenue } from '../data/venueData.js';
+import { PLAYED_MATCHES } from '../data/playedMatches.js';
+import { getVenue, VENUES } from '../data/venueData.js';
 import { WC_H2H, HYPE_SCORE, CONFEDERATION } from '../data/chaosSignals.js';
+import { TEAM_UTC_OFFSET } from '../data/teamTimezones.js';
+import { INJURY_FLAGS } from '../data/injuryFlags.js';
+import { REFEREES, MATCH_REFEREES } from '../data/refereeData.js';
+import { SQUAD_AVG_AGE } from '../data/squadAge.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+const ALL_MATCHES = [...PLAYED_MATCHES, ...UPCOMING_MATCHES];
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Home local hour (0–23) at a given UTC timestamp
+function homeHourAtKickoff(utcMs, teamId) {
+  const offset = TEAM_UTC_OFFSET[teamId] ?? 0;
+  return ((new Date(utcMs).getUTCHours() + offset) % 24 + 24) % 24;
+}
 
 function getStanding(teamId) {
   for (const group of Object.values(GROUP_STANDINGS)) {
@@ -157,11 +179,14 @@ export function computeChaos(match) {
 
   // ── 8. Rest differential ──
   const matchMs = new Date(match.date).getTime();
-  const lastMs = (teamId) => {
-    const prev = UPCOMING_MATCHES
+  const prevMatch = (teamId) =>
+    ALL_MATCHES
       .filter(m => (m.home === teamId || m.away === teamId) && new Date(m.date).getTime() < matchMs)
-      .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-    return prev ? new Date(prev.date).getTime() : null;
+      .sort((a, b) => new Date(b.date) - new Date(a.date))[0] ?? null;
+
+  const lastMs = (teamId) => {
+    const m = prevMatch(teamId);
+    return m ? new Date(m.date).getTime() : null;
   };
 
   const favLast = lastMs(favId);
@@ -250,6 +275,158 @@ export function computeChaos(match) {
     chaosScore += 6;
     deltaForDog += 3;
     drivers.push({ icon: '📰', text: `${favTeam?.name} widely tipped to win this — overconfidence can be a liability`, delta: 3 });
+  }
+
+  // ── 14. Travel distance (haversine between consecutive venues) ──
+  const getPrevVenue = (teamId) => {
+    const prev = prevMatch(teamId);
+    if (!prev) return null;
+    const name = prev.venue?.split(' · ')[0];
+    return name ? VENUES[name] : null;
+  };
+
+  const favPrevVenue = getPrevVenue(favId);
+  const dogPrevVenue = getPrevVenue(dogId);
+  const curVenueObj = venue;
+
+  const favKm = (favPrevVenue && curVenueObj)
+    ? haversineKm(favPrevVenue.lat, favPrevVenue.lng, curVenueObj.lat, curVenueObj.lng) : 0;
+  const dogKm = (dogPrevVenue && curVenueObj)
+    ? haversineKm(dogPrevVenue.lat, dogPrevVenue.lng, curVenueObj.lat, curVenueObj.lng) : 0;
+
+  const travelDiff = favKm - dogKm; // positive = fav traveled more
+
+  if (favKm >= 2500 && travelDiff >= 1200) {
+    chaosScore += 12;
+    deltaForDog += 5;
+    drivers.push({ icon: '✈️', text: `${favTeam?.name} traveled ${Math.round(favKm).toLocaleString()}km vs ${Math.round(dogKm).toLocaleString()}km — cross-continental fatigue hits the favourite harder`, delta: 5 });
+  } else if (favKm >= 2500) {
+    chaosScore += 7;
+    deltaForDog += 3;
+    drivers.push({ icon: '✈️', text: `${favTeam?.name} logged ${Math.round(favKm).toLocaleString()}km since last match — long-haul travel saps sharpness`, delta: 3 });
+  } else if (dogKm >= 2500 && travelDiff <= -1200) {
+    chaosScore += 6;
+    deltaForDog -= 4;
+    drivers.push({ icon: '✈️', text: `${dogTeam?.name} traveled ${Math.round(dogKm).toLocaleString()}km while ${favTeam?.name} stayed local — legs are heavier for the underdog`, delta: -4 });
+  } else if (Math.max(favKm, dogKm) >= 3500) {
+    chaosScore += 5;
+    drivers.push({ icon: '✈️', text: `Both teams crossed ${Math.round(Math.min(favKm, dogKm)).toLocaleString()}km+ — shared travel fatigue keeps the gap tight`, delta: 0 });
+  }
+
+  // ── 15. Altitude change (acclimation disadvantage) ──
+  const favAltPrev = favPrevVenue?.altitude ?? curVenueObj?.altitude ?? 0;
+  const dogAltPrev = dogPrevVenue?.altitude ?? curVenueObj?.altitude ?? 0;
+  const curAlt = curVenueObj?.altitude ?? 0;
+
+  const favAltJump = curAlt - favAltPrev;
+  const dogAltJump = curAlt - dogAltPrev;
+
+  if (favAltJump >= 1500 && favAltJump > dogAltJump + 600) {
+    chaosScore += 10;
+    deltaForDog += 4;
+    drivers.push({ icon: '🏔️', text: `${favTeam?.name} jumps +${Math.round(favAltJump)}m in altitude since last match — acclimation gap narrows the quality edge`, delta: 4 });
+  } else if (dogAltJump >= 1500 && dogAltJump > favAltJump + 600) {
+    chaosScore += 6;
+    deltaForDog -= 3;
+    drivers.push({ icon: '🏔️', text: `${dogTeam?.name} faces a +${Math.round(dogAltJump)}m altitude jump vs ${favTeam?.name}'s acclimated lungs`, delta: -3 });
+  }
+
+  // ── 16. Body clock disruption (kickoff during biological night at home) ──
+  const favHomeHour = homeHourAtKickoff(matchMs, favId);
+  const dogHomeHour = homeHourAtKickoff(matchMs, dogId);
+
+  const inDeadZone = h => h >= 0 && h < 6;
+  const inLateZone = h => h >= 23 || h < 2;
+
+  const favDead = inDeadZone(favHomeHour);
+  const dogDead = inDeadZone(dogHomeHour);
+  const favLate = inLateZone(favHomeHour);
+
+  if (favDead && !dogDead) {
+    chaosScore += 10;
+    deltaForDog += 4;
+    const h = favHomeHour < 10 ? `0${favHomeHour}:00` : `${favHomeHour}:00`;
+    drivers.push({ icon: '🌙', text: `Kickoff hits at ~${h} home time for ${favTeam?.name} — biological night erodes precision and decision-making`, delta: 4 });
+  } else if (dogDead && !favDead) {
+    chaosScore += 7;
+    deltaForDog -= 3;
+    const h = dogHomeHour < 10 ? `0${dogHomeHour}:00` : `${dogHomeHour}:00`;
+    drivers.push({ icon: '🌙', text: `~${h} home time for ${dogTeam?.name} — circadian disruption is an extra hill to climb for the underdog`, delta: -3 });
+  } else if (favDead && dogDead) {
+    chaosScore += 6;
+    drivers.push({ icon: '🌙', text: `Both teams playing through biological night — shared fatigue keeps the gap tighter than form suggests`, delta: 0 });
+  } else if (favLate && !dogDead) {
+    chaosScore += 5;
+    deltaForDog += 2;
+    drivers.push({ icon: '🌙', text: `Late night for ${favTeam?.name}'s home time zone — tiredness creeps into the final 20 mins`, delta: 2 });
+  }
+
+  // ── 17. Injury / key player suspension ──
+  const favInj = INJURY_FLAGS[favId];
+  const dogInj = INJURY_FLAGS[dogId];
+
+  if (favInj?.keyPlayerOut) {
+    chaosScore += 14;
+    deltaForDog += 7;
+    drivers.push({ icon: '🚑', text: `Key ${favTeam?.name} starter unavailable${favInj.note ? ` (${favInj.note})` : ''} — lineup disruption is the most reliable upset signal`, delta: 7 });
+  } else if ((favInj?.yellowsAtRisk ?? 0) >= 2) {
+    chaosScore += 6;
+    deltaForDog += 2;
+    drivers.push({ icon: '🟨', text: `${favInj.yellowsAtRisk} ${favTeam?.name} starters one booking from suspension — tactical caution limits aggression`, delta: 2 });
+  }
+
+  if (dogInj?.keyPlayerOut) {
+    chaosScore += 8;
+    deltaForDog -= 5;
+    drivers.push({ icon: '🚑', text: `${dogTeam?.name} missing a key player — upset window narrows significantly without their best`, delta: -5 });
+  }
+
+  // ── 18. Squad age — peak window vs. aging risk ──
+  const favAge = SQUAD_AVG_AGE[favId];
+  const dogAge = SQUAD_AVG_AGE[dogId];
+  const ageDiff = (favAge ?? 27) - (dogAge ?? 27);
+
+  if ((favAge ?? 0) >= 30.0) {
+    chaosScore += 10;
+    deltaForDog += 4;
+    drivers.push({ icon: '⏳', text: `${favTeam?.name} avg ${favAge?.toFixed(1)}yrs — squads past 30 show −8% win rate vs ELO expectation at late tournaments`, delta: 4 });
+  } else if ((favAge ?? 0) >= 29.0) {
+    chaosScore += 5;
+    deltaForDog += 2;
+    drivers.push({ icon: '⏳', text: `${favTeam?.name} at ${favAge?.toFixed(1)}yrs avg — approaching the age fatigue threshold in deep tournament runs`, delta: 2 });
+  }
+
+  if ((dogAge ?? 99) <= 23.0) {
+    chaosScore += 7;
+    drivers.push({ icon: '⚡', text: `${dogTeam?.name} avg just ${dogAge?.toFixed(1)}yrs — young squads run 12% higher upset rates; inconsistent but explosive`, delta: 0 });
+  }
+
+  if (ageDiff >= 3.5 && (favAge ?? 0) >= 29.0) {
+    chaosScore += 5;
+    deltaForDog += 3;
+    drivers.push({ icon: '⏳', text: `${Math.abs(ageDiff).toFixed(1)}yr age gap — younger legs vs aging leadership is a classic late-tournament upset recipe`, delta: 3 });
+  }
+
+  // ── 19. Referee card tendency ──
+  const refName = MATCH_REFEREES[`${match.home}-${match.away}`]
+    ?? MATCH_REFEREES[`${match.away}-${match.home}`];
+  const ref = refName ? REFEREES[refName] : null;
+
+  if (ref) {
+    if (ref.style === 'strict' && ref.yellowsPerGame >= 4.0) {
+      chaosScore += 8;
+      deltaForDog += 3;
+      drivers.push({ icon: '🟥', text: `${refName} averages ${ref.yellowsPerGame} yellows/game — physical referees disrupt technical favourites' rhythm`, delta: 3 });
+    } else if (ref.style === 'lenient' && ref.yellowsPerGame <= 2.8) {
+      chaosScore -= 4;
+      deltaForDog -= 2;
+      drivers.push({ icon: '🤝', text: `${refName} runs a clean game (${ref.yellowsPerGame} yellows avg) — fluent football rewards the technically superior side`, delta: -2 });
+    }
+    if (ref.penaltiesPerGame >= 0.26) {
+      chaosScore += 5;
+      deltaForDog += 2;
+      drivers.push({ icon: '⚽', text: `${refName} awards penalties at ${ref.penaltiesPerGame}/game — spot-kick risk adds a random-outcome layer`, delta: 2 });
+    }
   }
 
   // ── Finalise ──────────────────────────────────────────────────────────────

@@ -335,13 +335,34 @@ The app's codes are non-standard in places (e.g. `ALG` not `ALG`/`DZA`, `HTI` fo
 | Artifact | Path | Purpose |
 | --- | --- | --- |
 | Update script | `scripts/update-from-feed.mjs` | Fetches openfootball, maps teams, reconciles scores (with home/away orientation fix), derives standings + remaining fixtures, writes `src/data/*.js` |
+| Cron generator | `scripts/generate-update-cron.mjs` | Reads `UPCOMING_MATCHES` (+ same-day `PLAYED_MATCHES` for reference), computes kickoff + 2h 15m UTC per fixture, and writes per-match `on.schedule` entries into `.github/workflows/update-scores.yml` |
 | Team aliases | `scripts/team-map.json` | Normalized feed name → app 3-letter code; merged with `TEAMS` names at runtime |
-| GitHub Action | `.github/workflows/update-scores.yml` | Cron every 30 min + `workflow_dispatch`; runs script and commits on change. Requires **Settings → Actions → General → Workflow permissions → Read and write**. |
+| GitHub Action | `.github/workflows/update-scores.yml` | Per-match crons + tournament fallback poll + `workflow_dispatch`; runs script and commits on change. Requires **Settings → Actions → General → Workflow permissions → Read and write**. |
+
+### When updates run
+
+1. **Per-match crons (primary):** for each fixture still in `UPCOMING_MATCHES`, a one-time schedule fires at **kickoff + 2h 15m UTC** (buffer for stoppage/extra time). Matches that share the same kickoff share one cron. Example: 3:00 PM ET kickoff → cron at ~5:15 PM ET (`20:00 UTC` kickoff → `22:15 UTC` trigger).
+2. **Fallback poll:** every **20 minutes** during the tournament window (`Jun 11–30` and `Jul 1–19`, UTC) in case openfootball lags or a per-match cron is missed. GitHub scheduled workflows are best-effort and can drift by a few minutes.
+3. **Manual:** `workflow_dispatch` in the Actions tab any time.
+
+Regenerate crons after kickoff times change (new fixtures committed, schedule edits):
+
+```bash
+node scripts/generate-update-cron.mjs
+git add .github/workflows/update-scores.yml scripts/generate-update-cron.mjs
+git commit -m "chore: regenerate score-update cron schedule"
+```
+
+Preview the schedule without writing:
+
+```bash
+node scripts/generate-update-cron.mjs --dry-run
+```
 
 ### Commands
 
 ```bash
-# Preview changes (no writes)
+# Preview feed changes (no writes)
 node scripts/update-from-feed.mjs --dry-run
 
 # Apply updates locally

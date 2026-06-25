@@ -3,7 +3,10 @@ import { TEAMS } from '../data/teams.js';
 import { GROUP_STANDINGS, GROUP_NAMES, REMAINING_MATCHES } from '../data/groups.js';
 import { computeAllGroupStatuses } from '../utils/groupStatus.js';
 import { rankGroupRows, playedGroupMatches } from '../utils/standings.js';
-import { getPrediction } from '../utils/simulation.js';
+import {
+  computeAllPredictedStandings,
+  computePredictedQualifiers,
+} from '../utils/predictGroups.js';
 import TeamModal from './TeamModal.jsx';
 import FlagIcon from './FlagIcon.jsx';
 
@@ -13,79 +16,18 @@ function gdStr(row) {
   return d > 0 ? `+${d}` : `${d}`;
 }
 
-function predictGroupStandings(groupId, simMethod) {
-  const rows = GROUP_STANDINGS[groupId].map(r => ({ ...r }));
-  const remaining = REMAINING_MATCHES[groupId] ?? [];
-  const matches = playedGroupMatches(groupId).slice();
-
-  for (const { home, away } of remaining) {
-    const pred = getPrediction(home, away, simMethod);
-    const h = rows.find(r => r.teamId === home);
-    const a = rows.find(r => r.teamId === away);
-    if (!h || !a) continue;
-
-    const hGoals = pred.homeGoals;
-    const aGoals = pred.awayGoals;
-    h.mp++; a.mp++;
-    h.gf += hGoals; h.ga += aGoals;
-    a.gf += aGoals; a.ga += hGoals;
-
-    if (hGoals > aGoals) {
-      h.pts += 3; h.w++;
-      a.l++;
-    } else if (hGoals === aGoals) {
-      h.pts += 1; h.d++;
-      a.pts += 1; a.d++;
-    } else {
-      a.pts += 3; a.w++;
-      h.l++;
-    }
-
-    matches.push({ home, away, hg: hGoals, ag: aGoals });
-  }
-
-  return rankGroupRows(rows, matches);
-}
-
-// In WC2026, 12 groups → top 2 qualify (24 teams) + best 8 third-place (8 teams) = 32 R32 teams
-function computePredictedQualifiers(allStandings) {
-  const qualifiers = new Set();
-  const thirdPlaces = [];
-
-  for (const [groupId, rows] of Object.entries(allStandings)) {
-    if (rows.length < 3) continue;
-    qualifiers.add(rows[0].teamId); // 1st place
-    qualifiers.add(rows[1].teamId); // 2nd place
-    // 3rd place candidate
-    const third = rows[2];
-    thirdPlaces.push({
-      teamId: third.teamId,
-      pts: third.pts,
-      gd: third.gf - third.ga,
-      gf: third.gf,
-    });
-  }
-
-  // Best 8 third-place teams qualify
-  thirdPlaces.sort((a, b) => {
-    if (b.pts !== a.pts) return b.pts - a.pts;
-    if (b.gd  !== a.gd)  return b.gd  - a.gd;
-    return b.gf - a.gf;
-  });
-
-  thirdPlaces.slice(0, 8).forEach(t => qualifiers.add(t.teamId));
-  return qualifiers;
-}
-
-function GroupCard({ groupId, predictionMode, simMethod, onTeamClick, predictedQualifiers, groupStatuses }) {
+function GroupCard({
+  groupId,
+  predictionMode,
+  onTeamClick,
+  predictedRows,
+  predictedQualifiers,
+  best8ThirdIds,
+  groupStatuses,
+}) {
   const currentRows = useMemo(() => {
     return rankGroupRows(GROUP_STANDINGS[groupId], playedGroupMatches(groupId));
-  }, [groupId, GROUP_STANDINGS]);
-
-  const predictedRows = useMemo(() => {
-    if (!predictionMode) return null;
-    return predictGroupStandings(groupId, simMethod);
-  }, [groupId, predictionMode, simMethod, GROUP_STANDINGS, REMAINING_MATCHES]);
+  }, [groupId]);
 
   const rows = predictionMode ? predictedRows : currentRows;
   const statuses = groupStatuses[groupId];
@@ -113,9 +55,15 @@ function GroupCard({ groupId, predictionMode, simMethod, onTeamClick, predictedQ
             const team = TEAMS[row.teamId];
             const st = statuses[row.teamId] ?? 'maybe';
 
-            // Prediction mode: derive dots from predicted standings + cross-group
-            // best-8-third cutoff — not mathematical elimination (GROUP_STATUSES).
-            const predictQualify = predictionMode && predictedQualifiers?.has(row.teamId);
+            // Prediction mode: dots from the same predicted standings used for
+            // cross-group best-8-third selection (passed from parent).
+            const predictQualify = predictionMode && (
+              position < 2
+                ? predictedQualifiers?.has(row.teamId)
+                : position === 2
+                  ? best8ThirdIds?.has(row.teamId)
+                  : false
+            );
             const predictState = predictionMode
               ? predictQualify
                 ? 'confirmed'
@@ -181,18 +129,17 @@ export default function GroupsView({ probs, simMethod, predictionMode, playerPho
     [GROUP_STANDINGS, REMAINING_MATCHES],
   );
 
-  // Compute ALL group predicted standings together (needed for 3rd-place comparison)
+  // Single source of truth: compute all predicted standings once, then derive
+  // qualifiers + render rows from the same data (avoids per-card recompute drift).
   const allPredictedStandings = useMemo(() => {
     if (!predictionMode) return null;
-    const result = {};
-    for (const g of GROUP_NAMES) {
-      result[g] = predictGroupStandings(g, simMethod);
-    }
-    return result;
-  }, [predictionMode, simMethod, GROUP_STANDINGS, REMAINING_MATCHES]);
+    return computeAllPredictedStandings(simMethod);
+  }, [predictionMode, simMethod]);
 
-  const predictedQualifiers = useMemo(() => {
-    if (!allPredictedStandings) return null;
+  const { qualifiers: predictedQualifiers, best8ThirdIds } = useMemo(() => {
+    if (!allPredictedStandings) {
+      return { qualifiers: null, best8ThirdIds: null };
+    }
     return computePredictedQualifiers(allPredictedStandings);
   }, [allPredictedStandings]);
 
@@ -204,9 +151,10 @@ export default function GroupsView({ probs, simMethod, predictionMode, playerPho
             key={g}
             groupId={g}
             predictionMode={predictionMode}
-            simMethod={simMethod}
             onTeamClick={setSelectedTeam}
+            predictedRows={allPredictedStandings?.[g]}
             predictedQualifiers={predictedQualifiers}
+            best8ThirdIds={best8ThirdIds}
             groupStatuses={groupStatuses}
           />
         ))}

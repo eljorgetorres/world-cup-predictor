@@ -32,10 +32,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No score changes — skipping commit"
           else
-            git commit -m "$(cat <<'EOF'
-chore: auto-update scores from openfootball feed
-
-EOF
-)"
+            git commit -m "chore: auto-update scores from openfootball feed"
             git push
           fi

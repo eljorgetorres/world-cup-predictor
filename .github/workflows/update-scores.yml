@@ -1,0 +1,41 @@
+name: Update World Cup scores
+
+on:
+  schedule:
+    # Every 30 minutes during the tournament (best-effort on GitHub Actions)
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-scores:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch feed and regenerate data
+        run: node scripts/update-from-feed.mjs
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/playedMatches.js src/data/upcomingMatches.js src/data/groups.js
+          if git diff --staged --quiet; then
+            echo "No score changes — skipping commit"
+          else
+            git commit -m "$(cat <<'EOF'
+chore: auto-update scores from openfootball feed
+
+EOF
+)"
+            git push
+          fi

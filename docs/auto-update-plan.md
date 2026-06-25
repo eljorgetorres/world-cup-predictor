@@ -328,6 +328,54 @@ The app's codes are non-standard in places (e.g. `ALG` not `ALG`/`DZA`, `HTI` fo
 
 ---
 
+## 10. Implementation (local setup)
+
+**Status:** implemented and deployed via GitHub Actions on `main` (2026-06-25).
+
+| Artifact | Path | Purpose |
+| --- | --- | --- |
+| Update script | `scripts/update-from-feed.mjs` | Fetches openfootball, maps teams, reconciles scores (with home/away orientation fix), derives standings + remaining fixtures, writes `src/data/*.js` |
+| Team aliases | `scripts/team-map.json` | Normalized feed name → app 3-letter code; merged with `TEAMS` names at runtime |
+| GitHub Action | `.github/workflows/update-scores.yml` | Cron every 30 min + `workflow_dispatch`; runs script and commits on change. Requires **Settings → Actions → General → Workflow permissions → Read and write**. |
+
+### Commands
+
+```bash
+# Preview changes (no writes)
+node scripts/update-from-feed.mjs --dry-run
+
+# Apply updates locally
+node scripts/update-from-feed.mjs
+```
+
+### What the script does (Phase 1 + derived standings)
+
+1. Loads the **canonical fixture list** from committed `PLAYED_MATCHES` + `UPCOMING_MATCHES` (preserves venue/date/home-away).
+2. Fetches `https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json`.
+3. Maps feed team names via `scripts/team-map.json` + `TEAMS`; **throws on unmapped names**.
+4. Matches finished feed rows to fixtures by **unordered pair within group**; re-orients `hg`/`ag` to the fixture's `home`/`away`.
+5. Derives `GROUP_STANDINGS` and `REMAINING_MATCHES` from finished matches.
+6. Validates (non-negative scores, no played-count regression, partition of fixtures, pts consistency).
+7. Writes `src/data/playedMatches.js`, `upcomingMatches.js`, `groups.js` with an auto-generated banner (or prints diff in `--dry-run`).
+
+Knockout placeholder teams in the feed (`W73`, `2A`, etc.) are skipped until Phase 4.
+
+### Fallback (not wired yet)
+
+If openfootball lags or is unavailable, [API-Football](https://www.api-football.com/) (`league=1&season=2026`) can be added as a fallback using a GitHub Actions secret `APIFOOTBALL_KEY`. The openfootball path is the default and requires no key.
+
+### Still manual
+
+- `src/data/teams.js` — Elo and FIFA rank values
+- Knockout bracket data (Phase 4)
+- Venue/date/kickoff schedule for fixtures not yet in committed `PLAYED_MATCHES` + `UPCOMING_MATCHES`
+
+### Manual override
+
+If the feed is wrong, revert the auto-commit or edit data by hand and re-run. A dedicated `overrides.js` merge (§7) is planned for Phase 3.
+
+---
+
 ### Appendix — Key URLs
 - openfootball 2026 JSON: `https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json`
 - openfootball repo / README: `https://github.com/openfootball/worldcup.json`

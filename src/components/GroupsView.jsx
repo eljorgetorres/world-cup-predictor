@@ -7,8 +7,6 @@ import { getPrediction } from '../utils/simulation.js';
 import TeamModal from './TeamModal.jsx';
 import FlagIcon from './FlagIcon.jsx';
 
-const GROUP_STATUSES = computeAllGroupStatuses();
-
 function gd(row) { return row.gf - row.ga; }
 function gdStr(row) {
   const d = gd(row);
@@ -79,18 +77,18 @@ function computePredictedQualifiers(allStandings) {
   return qualifiers;
 }
 
-function GroupCard({ groupId, predictionMode, simMethod, onTeamClick, predictedQualifiers }) {
+function GroupCard({ groupId, predictionMode, simMethod, onTeamClick, predictedQualifiers, groupStatuses }) {
   const currentRows = useMemo(() => {
     return rankGroupRows(GROUP_STANDINGS[groupId], playedGroupMatches(groupId));
-  }, [groupId]);
+  }, [groupId, GROUP_STANDINGS]);
 
   const predictedRows = useMemo(() => {
     if (!predictionMode) return null;
     return predictGroupStandings(groupId, simMethod);
-  }, [groupId, predictionMode, simMethod]);
+  }, [groupId, predictionMode, simMethod, GROUP_STANDINGS, REMAINING_MATCHES]);
 
   const rows = predictionMode ? predictedRows : currentRows;
-  const statuses = GROUP_STATUSES[groupId];
+  const statuses = groupStatuses[groupId];
 
   return (
     <div className={`group-card${predictionMode ? ' group-card-predict' : ''}`}>
@@ -111,25 +109,23 @@ function GroupCard({ groupId, predictionMode, simMethod, onTeamClick, predictedQ
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => {
+          {rows.map((row, position) => {
             const team = TEAMS[row.teamId];
             const st = statuses[row.teamId] ?? 'maybe';
 
-            // Prediction mode: three states — qualify / undecided / eliminated.
-            // "Eliminated" only if the group simulation says they can NEVER be top 3
-            // (neverTop3). A team predicted 3rd-but-not-best-8 is undecided, not out.
+            // Prediction mode: derive dots from predicted standings + cross-group
+            // best-8-third cutoff — not mathematical elimination (GROUP_STATUSES).
             const predictQualify = predictionMode && predictedQualifiers?.has(row.teamId);
-            const dotClass = predictionMode
+            const predictState = predictionMode
               ? predictQualify
-                ? 'qs-confirmed'
-                : (st === 'eliminated' ? 'qs-eliminated' : 'qs-maybe')
-              : `qs-${st}`;
+                ? 'confirmed'
+                : position === 2
+                  ? 'maybe'   // predicted 3rd but missed best-8-third
+                  : 'eliminated'
+              : st;
 
-            const rowClass = predictionMode
-              ? predictQualify
-                ? 'row-status-confirmed'
-                : (st === 'eliminated' ? 'row-status-eliminated' : 'row-status-maybe')
-              : `row-status-${st}`;
+            const dotClass = `qs-${predictState}`;
+            const rowClass = `row-status-${predictState}`;
 
             return (
               <tr
@@ -180,6 +176,11 @@ function GroupCard({ groupId, predictionMode, simMethod, onTeamClick, predictedQ
 export default function GroupsView({ probs, simMethod, predictionMode, playerPhotos }) {
   const [selectedTeam, setSelectedTeam] = useState(null);
 
+  const groupStatuses = useMemo(
+    () => computeAllGroupStatuses(),
+    [GROUP_STANDINGS, REMAINING_MATCHES],
+  );
+
   // Compute ALL group predicted standings together (needed for 3rd-place comparison)
   const allPredictedStandings = useMemo(() => {
     if (!predictionMode) return null;
@@ -188,7 +189,7 @@ export default function GroupsView({ probs, simMethod, predictionMode, playerPho
       result[g] = predictGroupStandings(g, simMethod);
     }
     return result;
-  }, [predictionMode, simMethod]);
+  }, [predictionMode, simMethod, GROUP_STANDINGS, REMAINING_MATCHES]);
 
   const predictedQualifiers = useMemo(() => {
     if (!allPredictedStandings) return null;
@@ -206,6 +207,7 @@ export default function GroupsView({ probs, simMethod, predictionMode, playerPho
             simMethod={simMethod}
             onTeamClick={setSelectedTeam}
             predictedQualifiers={predictedQualifiers}
+            groupStatuses={groupStatuses}
           />
         ))}
       </div>
